@@ -1,0 +1,45 @@
+# Xcode
+.DS_Store
+build/
+DerivedData/
+*.xcworkspace/
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+/.swiftpm
+Package.resolved
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/
+Carthage/Checkouts
+Carthage/Build
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/*.log
+
+# Archives
+*.xcarchive
+
+# Provisioning Profiles
+*.mobileprovision
+
+# Simulator files
+Library/Developer/CoreSimulator/
+
+# Logs
+*.log
+*.crash
+*.xcactivitylog
+
+# Secrets
+*.env
