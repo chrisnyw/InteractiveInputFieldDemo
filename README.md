@@ -33,15 +33,23 @@ cd InteractiveInputFieldDemo
    ```
 3. The app should launch in the simulator or connected device.
 
-## Screenshots
+## Demonstratoin
 
-### Idle State
+### Video
+
+<figure>
+<img src="https://github.com/user-attachments/assets/feebda91-cdc0-4b47-a1e0-9b6b71cc53d1" width="200" title="Interactive Input Field Demo" alt="Interactive Input Field Demo"/>
+</figure>
+
+### Screenshots
+
+#### Idle State
 
 Shows a text input field with placeholder "Start Typing..." with two buttons at the bottom.
 
 <img src="./Screenshots/Idle.png" width="200" title="Idle" alt="Idle"/>
 
-### Text Input Field Properties
+#### Text Input Field Properties
 
 1. When text field got focused
 
@@ -63,13 +71,13 @@ Shows a text input field with placeholder "Start Typing..." with two buttons at 
 
 <img src="./Screenshots/TextFont14WithScroll.png" width="200" title="TextFont14WithScroll" alt="TextFont14WithScroll"/>
 
-### Fullscreen Text Input Field
+#### Fullscreen Text Input Field
 
 When tapping of the expand button next to the input text field, will enter to fullscreen text editing mode
 
 <img src="./Screenshots/TextFullScreen.png" width="200" title="Text FullScreen" alt="Text FullScreen"/>
 
-### Photo Selection Properties
+#### Photo Selection Properties
 
 1. When pressing the photo icon on the bottom-left corner, the app shows the mini photo selection view
 
@@ -83,4 +91,4 @@ When tapping of the expand button next to the input text field, will enter to fu
 
 <img src="./Screenshots/PhotoSelected.png" width="200" title="Photo selected" alt="Photo selected"/>
 
-### Happy coding!
+## Happy coding!
