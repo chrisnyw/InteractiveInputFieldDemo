@@ -9,22 +9,9 @@ import SwiftUI
 import PhotosUI
 
 struct InteractiveInputTextView: View {
-    enum BottomMode {
-        case keyboard
-        case photo
-        case none
-    }
     
-    @State private var message: String = ""
-    @State private var showFullScreenTextInputView = false
-
-    // photo
-    @State private var showingPhotoPickerSheet = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
-    @State private var selectedImage: Image?
-    
+    @State var viewModel: InteractiveInputTextViewModel = InteractiveInputTextViewModel()
     @FocusState private var isFocusedKeyboard: Bool
-    @State private var bottomMode: BottomMode = .none
     
     @Namespace var topID
     
@@ -61,15 +48,15 @@ struct InteractiveInputTextView: View {
                             
                             // Textfield and expand icon
                             HStack(alignment: .top) {
-                                DynamicFontSizeTextEditor(text: $message, isFocused: $isFocusedKeyboard) { isFocused in
+                                DynamicFontSizeTextEditor(text: $viewModel.message, isFocused: $isFocusedKeyboard) { isFocused in
                                     if isFocused {
                                         show(bottomMode: .keyboard)
                                     }
                                 }
                                 
-                                if !message.isEmpty {
+                                if !viewModel.message.isEmpty {
                                     Button {
-                                        showFullScreenTextInputView.toggle()
+                                        viewModel.showFullScreenTextInputView.toggle()
                                     } label: {
                                         Image(systemName: Constants.Icon.expand)
                                             .padding(.top, 8)
@@ -80,7 +67,7 @@ struct InteractiveInputTextView: View {
                             .padding(.horizontal)
                             
                             // Selected image
-                            if let image = selectedImage {
+                            if let image = viewModel.selectedImage {
                                 HStack {
                                     ZStack(alignment: .topTrailing) {
                                         Color.clear
@@ -101,7 +88,7 @@ struct InteractiveInputTextView: View {
                             
                             // Bottom buttons
                             BottomSheetButtonsBar(photoPickerAction: {
-                                let nextMode: BottomMode = bottomMode == .photo ? .none : .photo
+                                let nextMode: InteractiveInputTextViewModel.BottomMode = viewModel.bottomMode == .photo ? .none : .photo
                                 show(bottomMode: nextMode)
                             }, sendAction: {
                                 sendMessage()
@@ -109,8 +96,8 @@ struct InteractiveInputTextView: View {
                             .padding(.horizontal)
                             
                             // Bottom photo selectionp view
-                            if bottomMode == .photo {
-                                BottomPhotoSelectionView(selectedImage: $selectedImage)
+                            if viewModel.bottomMode == .photo {
+                                BottomPhotoSelectionView(selectedImage: $viewModel.selectedImage)
                                     .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
                             }
                         }
@@ -139,9 +126,9 @@ struct InteractiveInputTextView: View {
                 }
             }
         }
-        .sheet(isPresented: $showFullScreenTextInputView) {
+        .sheet(isPresented: $viewModel.showFullScreenTextInputView) {
             FullScreenTextInputView(
-                message: $message,
+                message: $viewModel.message,
                 switchToPhotoSelectionView: {
                     show(bottomMode: .photo)
                 }, sendMessageAction: {
@@ -149,18 +136,18 @@ struct InteractiveInputTextView: View {
                 }
             )
         }
-        .photosPicker(isPresented: $showingPhotoPickerSheet, selection: $selectedPhotoItem)
-        .animation(.easeInOut, value: selectedImage)
-        .animation(.easeInOut, value: bottomMode)
-        .onChange(of: selectedImage) {
-            bottomMode = .none
+        .photosPicker(isPresented: $viewModel.showingPhotoPickerSheet, selection: $viewModel.selectedPhotoItem)
+        .animation(.easeInOut, value: viewModel.selectedImage)
+        .animation(.easeInOut, value: viewModel.bottomMode)
+        .onChange(of: viewModel.selectedImage) {
+            viewModel.bottomMode = .none
         }
-        .onChange(of: selectedPhotoItem) {
+        .onChange(of: viewModel.selectedPhotoItem) {
             Task {
-                guard let selectedPhotoItem else { return }
+                guard let selectedPhotoItem = viewModel.selectedPhotoItem else { return }
                 
                 if let loaded = try? await selectedPhotoItem.loadTransferable(type: Image.self) {
-                    selectedImage = loaded
+                    viewModel.selectedImage = loaded
                 } else {
                     debugPrint("Failed to load image")
                 }
@@ -192,7 +179,7 @@ struct InteractiveInputTextView: View {
     private var bottomSheetHeight: CGFloat {
         var height: CGFloat = Height.bottomSheetBasic
         
-        if bottomMode == .photo {
+        if viewModel.bottomMode == .photo {
             height += Height.bottomPhotoSelection
         }
 
@@ -200,13 +187,13 @@ struct InteractiveInputTextView: View {
     }
     
     private var selectedImageHeight: CGFloat {
-        return selectedImage == nil ? 0 : Height.selectedImageSession
+        return viewModel.selectedImage == nil ? 0 : Height.selectedImageSession
     }
     
     private var closeButton: some View {
         Button(action: {
-            selectedPhotoItem = nil
-            selectedImage = nil
+            viewModel.selectedPhotoItem = nil
+            viewModel.selectedImage = nil
         }) {
             Image(systemName: Constants.Icon.removePhoto)
                 .foregroundStyle(.white, .black)
@@ -214,13 +201,13 @@ struct InteractiveInputTextView: View {
         }
     }
     
-    private func show(bottomMode: BottomMode) {
+    private func show(bottomMode: InteractiveInputTextViewModel.BottomMode) {
         self.isFocusedKeyboard = bottomMode == .keyboard
-        self.bottomMode = bottomMode
+        self.viewModel.bottomMode = bottomMode
     }
 
     private func sendMessage() {
-        debugPrint("Send message: '\(message)'")
+        debugPrint("Send message: '\(viewModel.message)'")
     }
 }
 
