@@ -9,9 +9,11 @@ import SwiftUI
 import Combine
 
 struct DynamicFontSizeTextEditor: View {
-    @Binding var text: String
-    @FocusState.Binding var isFocused: Bool
-    var isFocusedAction: ((Bool) -> Void)?
+    @State private var text: String
+    @Binding private var debounceText: String
+    
+    @FocusState.Binding private var isFocused: Bool
+    private var isFocusedAction: ((Bool) -> Void)?
     
     @State private var fontSize: CGFloat = Constants.Font.maximumMessageFontSize
     @State private var editorHeight: CGFloat = 80 // Fixed height
@@ -19,7 +21,14 @@ struct DynamicFontSizeTextEditor: View {
     
     private let minFontSize: CGFloat = Constants.Font.minimumMessageFontSize
     private let maxFontSize: CGFloat = Constants.Font.maximumMessageFontSize
-    private let textPublisher = PassthroughSubject<Void, Never>()
+    private let textPublisher = PassthroughSubject<String, Never>()
+    
+    init(text: Binding<String>, isFocused: FocusState<Bool>.Binding, isFocusedAction: ((Bool) -> Void)? = nil) {
+        _text = State(initialValue: text.wrappedValue)
+        _debounceText = text
+        _isFocused = isFocused
+        self.isFocusedAction = isFocusedAction
+    }
     
     var body: some View {
         TextEditor(text: $text)
@@ -37,15 +46,17 @@ struct DynamicFontSizeTextEditor: View {
                 }
             })
             .onChange(of: text) {
-                textPublisher.send()
+                textPublisher.send(text)
             }
             .onReceive(
-                textPublisher.debounce(
-                    for: .milliseconds(500),
-                    scheduler: DispatchQueue.main
-                )
-            ) {
-                adjustFontSize()
+                textPublisher
+                    .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
+                    .scan((oldText: "", isAddingText: false), { lastTuple, newText in
+                        let isAddingText = newText.count > lastTuple.oldText.count
+                        return (oldText: String(newText), isAddingText: isAddingText)
+                    })
+            ) { tuple in
+                fontSize = adjustFontSize(updatedText: tuple.oldText, isAddingText: tuple.isAddingText)
             }
             .onChange(of: isFocused) {
                 isFocusedAction?(isFocused)
@@ -58,31 +69,50 @@ struct DynamicFontSizeTextEditor: View {
             }
     }
     
-    private func adjustFontSize() {
-        let constraintSize = CGSize(width: textEditorSize.width, height: .infinity)
+    private func adjustFontSize(updatedText: String, isAddingText: Bool) -> CGFloat {
+        var oldFontSize = fontSize
+        var newFontSize = self.calculateExpectedFontSize(currentFontSize: oldFontSize, updatedText: updatedText, isAddingText: isAddingText)
         
-        let calculatedHeight = text.boundingRect(
+        // adjust the font size until it fit the space
+        while newFontSize != oldFontSize {
+            oldFontSize = newFontSize
+            newFontSize = self.calculateExpectedFontSize(currentFontSize: oldFontSize, updatedText: updatedText, isAddingText: isAddingText)
+        }
+        
+        return newFontSize
+    }
+    
+    private func calculateExpectedFontSize(currentFontSize: CGFloat, updatedText: String, isAddingText: Bool) -> CGFloat {
+        let textEditorPadding: CGFloat =  16
+        let constraintSize = CGSize(width: textEditorSize.width - textEditorPadding, height: .infinity)
+        
+        let calculatedHeight = updatedText.boundingRect(
             with: constraintSize,
-            options: .usesLineFragmentOrigin,
-            attributes: [.font: UIFont.systemFont(ofSize: fontSize)],
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: UIFont.systemFont(ofSize: currentFontSize)],
             context: nil
         ).height
         
         let heightRatio = calculatedHeight / editorHeight
         
-        if heightRatio >= 2/3 {
-            fontSize = max(fontSize - 2, minFontSize)
-        } else if heightRatio <= 1/2 && fontSize < maxFontSize {
-            fontSize = min(fontSize + 2, maxFontSize)
+        var tempFontSize = currentFontSize
+        
+        if heightRatio >= 2/3, isAddingText {
+            tempFontSize = max(currentFontSize - 2, minFontSize)
+            print("😢 decrease fontSize to \(tempFontSize)")
+        } else if heightRatio <= 1/2 && fontSize < maxFontSize && !isAddingText {
+            tempFontSize = min(currentFontSize + 2, maxFontSize)
+            print("😢 increase fontSize to \(tempFontSize)")
         }
+        
+        print("textEditorSize.width: \(textEditorSize.width), calculatedHeight: \(calculatedHeight), heightRatio: \(heightRatio), fontSize: \(tempFontSize), isAddingText: \(isAddingText)")
+        return tempFontSize
     }
 }
 
-struct DynamicFontSizeTextEditor_Previews: PreviewProvider {
-    @State static var message: String = ""
-    @FocusState static var isFocused: Bool
+#Preview {
+    @Previewable @State var message: String = ""
+    @FocusState var isFocused: Bool
     
-    static var previews: some View {
-        DynamicFontSizeTextEditor(text: $message, isFocused: $isFocused)
-    }
+    DynamicFontSizeTextEditor(text: $message, isFocused: $isFocused)
 }
