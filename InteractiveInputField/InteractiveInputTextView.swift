@@ -21,6 +21,7 @@ struct InteractiveInputTextView: View {
         static let bottomSheetBasic: CGFloat = 180
         static let bottomPhotoSelection: CGFloat = 230
         static let bottomPhotoSelectionThreshold: CGFloat = 100
+        static let dismissBottomPhotoSheetThresholdYOffset: CGFloat = -80
     }
     
     var body: some View {
@@ -108,8 +109,14 @@ struct InteractiveInputTextView: View {
                     .onScrollGeometryChange(for: Double.self) { geometry in
                         geometry.contentOffset.y
                     } action: { passYOffset, currYOffset in
-                        if currYOffset > Height.bottomPhotoSelectionThreshold {
-                            showingPhotoPickerSheet = true
+                        switch viewModel.bottomMode {
+                        case .keyboard:
+                            if currYOffset > Height.bottomPhotoSelectionThreshold {
+                                viewModel.showingPhotoPickerSheet = true
+                            }
+                        case .photo,
+                                .none:
+                            break
                         }
                     }
                     .onScrollPhaseChange { oldPhase, newPhase, context in
@@ -121,7 +128,12 @@ struct InteractiveInputTextView: View {
                             } else {
                                 proxy.scrollTo(topID)
                             }
+                        } else if newPhase == .decelerating {
+                            if viewModel.bottomMode == .photo, context.geometry.contentOffset.y < Height.dismissBottomPhotoSheetThresholdYOffset {
+                                show(bottomMode: .none)
+                            }
                         }
+                                
                     }
                 }
             }
