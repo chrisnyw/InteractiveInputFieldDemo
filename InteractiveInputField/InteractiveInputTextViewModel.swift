@@ -23,7 +23,6 @@ import PhotosUI
     var selectedPhotoItem: PhotosPickerItem? = nil
     var selectedImage: Image? = nil
     
-//    var isFocusedKeyboard: Bool = false
     var bottomMode: BottomMode = .none
     
 }

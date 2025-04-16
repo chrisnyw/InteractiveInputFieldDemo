@@ -13,13 +13,18 @@ struct InteractiveInputTextView: View {
     @State var viewModel: InteractiveInputTextViewModel = InteractiveInputTextViewModel()
     @FocusState private var isFocusedKeyboard: Bool
     
-    @Namespace var topID
+    @Namespace private var bottomSheetTopID
+    @Namespace private var bottomPhotoTopID
+    @Namespace private var transitionNamespace
+    
+    private static let photoTransitionID: String = "photo"
+    private static let textEditorTransitionID: String = "text"
     
     private struct Height {
         static let horizontalTags: CGFloat = 60
         static let selectedImageSession: CGFloat = 50
         static let bottomSheetBasic: CGFloat = 180
-        static let bottomPhotoSelection: CGFloat = 230
+        static let bottomPhotoSelection: CGFloat = 200
         static let bottomPhotoSelectionThreshold: CGFloat = 100
         static let dismissBottomPhotoSheetThresholdYOffset: CGFloat = -80
     }
@@ -36,7 +41,7 @@ struct InteractiveInputTextView: View {
                 ScrollViewReader { proxy in
                     ScrollView(.vertical, showsIndicators: false) {
                         horizontalTags
-                            .id(topID)
+                            .id(bottomSheetTopID)
                         
                         //top shadow
                         Color.appBackground
@@ -54,6 +59,7 @@ struct InteractiveInputTextView: View {
                                         show(bottomMode: .keyboard)
                                     }
                                 }
+                                .matchedTransitionSource(id: Self.textEditorTransitionID, in: transitionNamespace)
                                 
                                 if !viewModel.message.isEmpty {
                                     Button {
@@ -82,7 +88,7 @@ struct InteractiveInputTextView: View {
                                             .padding(2)
                                         closeButton
                                     }
-                                    .frame(width: 50, height: 50)
+                                    .frame(width: Height.selectedImageSession, height: Height.selectedImageSession)
                                 }
                                 .padding(.horizontal)
                             }
@@ -96,49 +102,44 @@ struct InteractiveInputTextView: View {
                             })
                             .padding(.horizontal)
                             
-                            // Bottom photo selectionp view
+                            // Bottom photo selection sheet view
                             if viewModel.bottomMode == .photo {
-                                BottomPhotoSelectionView(selectedImage: $viewModel.selectedImage)
-                                    .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+                                bottomPhotoSheet(with: proxy)
                             }
+                           
                         }
-                        .transition(.move(edge: .bottom))
+                        
                     }
-                    .frame(height:  bottomSheetHeight)
+                    .frame(height: bottomSheetHeight)
+                    .animation(.easeInOut, value: bottomSheetHeight)
                     .scrollDismissesKeyboard(.interactively)
                     .onScrollGeometryChange(for: Double.self) { geometry in
                         geometry.contentOffset.y
                     } action: { passYOffset, currYOffset in
-                        switch viewModel.bottomMode {
-                        case .keyboard:
-                            if currYOffset > Height.bottomPhotoSelectionThreshold {
-                                viewModel.showingPhotoPickerSheet = true
-                            }
-                        case .photo,
-                                .none:
-                            break
+                        if currYOffset > 0 {
+                            // don't allow bottomSheet scrollView to scroll over the top
+                            proxy.scrollTo(bottomSheetTopID)
                         }
                     }
                     .onScrollPhaseChange { oldPhase, newPhase, context in
                         if newPhase == .idle {
                             if context.geometry.contentOffset.y < Height.bottomPhotoSelectionThreshold {
                                 withAnimation {
-                                    proxy.scrollTo(topID)
+                                    proxy.scrollTo(bottomSheetTopID)
                                 }
                             } else {
-                                proxy.scrollTo(topID)
+                                proxy.scrollTo(bottomSheetTopID)
                             }
                         } else if newPhase == .decelerating {
                             if viewModel.bottomMode == .photo, context.geometry.contentOffset.y < Height.dismissBottomPhotoSheetThresholdYOffset {
                                 show(bottomMode: .none)
                             }
                         }
-                                
                     }
                 }
             }
         }
-        .sheet(isPresented: $viewModel.showFullScreenTextInputView) {
+        .popover(isPresented: $viewModel.showFullScreenTextInputView) {
             FullScreenTextInputView(
                 message: $viewModel.message,
                 switchToPhotoSelectionView: {
@@ -147,10 +148,12 @@ struct InteractiveInputTextView: View {
                     sendMessage()
                 }
             )
+            .navigationTransition(.zoom(sourceID: Self.textEditorTransitionID, in: transitionNamespace))
         }
-        .photosPicker(isPresented: $viewModel.showingPhotoPickerSheet, selection: $viewModel.selectedPhotoItem)
-        .animation(.easeInOut, value: viewModel.selectedImage)
-        .animation(.easeInOut, value: viewModel.bottomMode)
+        .popover(isPresented: $viewModel.showingPhotoPickerSheet) {
+            BottomPhotoSelectionSheetView(selectedImage: $viewModel.selectedImage)
+                .navigationTransition(.zoom(sourceID: Self.photoTransitionID, in: transitionNamespace))
+        }
         .onChange(of: viewModel.selectedImage) {
             viewModel.bottomMode = .none
         }
@@ -188,6 +191,39 @@ struct InteractiveInputTextView: View {
         .frame(height: Height.horizontalTags)
     }
     
+    private func bottomPhotoSheet(with scrollViewProxy: ScrollViewProxy) -> some View {
+        ScrollView {
+            BottomPhotoSelectionView(selectedImage: $viewModel.selectedImage)
+                .id(bottomPhotoTopID)
+                .matchedTransitionSource(id: Self.photoTransitionID, in: transitionNamespace)
+
+        }
+        .frame(height: Height.bottomPhotoSelection)
+        .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+        .scrollClipDisabled()
+        .onScrollGeometryChange(for: Double.self) { geometry in
+            geometry.contentOffset.y
+        } action: { passYOffset, currYOffset in
+            guard viewModel.bottomMode == .photo else { return }
+            
+            if currYOffset > Height.bottomPhotoSelectionThreshold {
+                viewModel.showingPhotoPickerSheet = true
+            }
+        }
+        .onScrollPhaseChange { oldPhase, newPhase, context in
+            let yOffset = context.geometry.contentOffset.y
+            if newPhase == .idle {
+                if yOffset < Height.bottomPhotoSelectionThreshold {
+                    withAnimation {
+                        scrollViewProxy.scrollTo(bottomPhotoTopID, anchor: .top)
+                    }
+                } else {
+                    scrollViewProxy.scrollTo(bottomPhotoTopID, anchor: .top)
+                }
+            }
+        }
+    }
+    
     private var bottomSheetHeight: CGFloat {
         var height: CGFloat = Height.bottomSheetBasic
         
@@ -199,7 +235,8 @@ struct InteractiveInputTextView: View {
     }
     
     private var selectedImageHeight: CGFloat {
-        return viewModel.selectedImage == nil ? 0 : Height.selectedImageSession
+        let padding: CGFloat = 10
+        return viewModel.selectedImage == nil ? 0 : Height.selectedImageSession + padding
     }
     
     private var closeButton: some View {

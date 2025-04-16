@@ -10,7 +10,8 @@ import Combine
 
 struct DynamicFontSizeTextEditor: View {
     @State private var text: String
-    @Binding private var debounceText: String
+    @State private var lastText: String
+    @Binding private var debouncedText: String
     
     @FocusState.Binding private var isFocused: Bool
     private var isFocusedAction: ((Bool) -> Void)?
@@ -25,9 +26,10 @@ struct DynamicFontSizeTextEditor: View {
     
     init(text: Binding<String>, isFocused: FocusState<Bool>.Binding, isFocusedAction: ((Bool) -> Void)? = nil) {
         _text = State(initialValue: text.wrappedValue)
-        _debounceText = text
+        _debouncedText = text
         _isFocused = isFocused
         self.isFocusedAction = isFocusedAction
+        self.lastText = ""
     }
     
     var body: some View {
@@ -50,13 +52,15 @@ struct DynamicFontSizeTextEditor: View {
             }
             .onReceive(
                 textPublisher
-                    .debounce(for: .milliseconds(500), scheduler: DispatchQueue.main)
-                    .scan((oldText: "", isAddingText: false), { lastTuple, newText in
-                        let isAddingText = newText.count > lastTuple.oldText.count
-                        return (oldText: String(newText), isAddingText: isAddingText)
-                    })
+                    .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
+                    .map { newText -> (newText: String, isAddingText: Bool) in
+                        let isAddingText = newText.count > lastText.count
+                        return (newText: newText, isAddingText: isAddingText)
+                    }
             ) { tuple in
-                fontSize = adjustFontSize(updatedText: tuple.oldText, isAddingText: tuple.isAddingText)
+                fontSize = adjustFontSize(updatedText: tuple.newText, isAddingText: tuple.isAddingText)
+                lastText = tuple.newText
+                 _debouncedText.wrappedValue = tuple.newText
             }
             .onChange(of: isFocused) {
                 isFocusedAction?(isFocused)
@@ -66,6 +70,10 @@ struct DynamicFontSizeTextEditor: View {
                 proxy.size
             } action: {
                 textEditorSize = $0
+            }
+            .onChange(of: debouncedText) {
+                guard !isFocused else { return }
+                text = debouncedText
             }
     }
     
@@ -99,13 +107,13 @@ struct DynamicFontSizeTextEditor: View {
         
         if heightRatio >= 2/3, isAddingText {
             tempFontSize = max(currentFontSize - 2, minFontSize)
-            print("😢 decrease fontSize to \(tempFontSize)")
+            debugPrint("Decrease fontSize to \(tempFontSize)")
         } else if heightRatio <= 1/2 && fontSize < maxFontSize && !isAddingText {
             tempFontSize = min(currentFontSize + 2, maxFontSize)
-            print("😢 increase fontSize to \(tempFontSize)")
+            debugPrint("Increase fontSize to \(tempFontSize)")
         }
         
-        print("textEditorSize.width: \(textEditorSize.width), calculatedHeight: \(calculatedHeight), heightRatio: \(heightRatio), fontSize: \(tempFontSize), isAddingText: \(isAddingText)")
+//        debugPrint("textEditorSize.width: \(textEditorSize.width), calculatedHeight: \(calculatedHeight), heightRatio: \(heightRatio), fontSize: \(tempFontSize), isAddingText: \(isAddingText)")
         return tempFontSize
     }
 }

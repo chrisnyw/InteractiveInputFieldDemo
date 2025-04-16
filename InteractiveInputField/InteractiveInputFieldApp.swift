@@ -9,9 +9,19 @@ import SwiftUI
 
 @main
 struct InteractiveInputFieldApp: App {
+    private let photoLibraryService: PhotoLibraryService = RealPhotoLibraryService()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(.light)
+                .environment(\.photoLibraryService, photoLibraryService)
+            
         }
     }
+}
+
+
+extension EnvironmentValues {
+    @Entry var photoLibraryService: PhotoLibraryService = MockPhotoLibraryService()
 }

@@ -29,9 +29,22 @@
 		18F648562D95C31F0057513D /* InteractiveInputFieldUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = InteractiveInputFieldUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1801F9EC2DAEE01300FD462E /* Exceptions for "InteractiveInputField" folder in "InteractiveInputField" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 18F6483A2D95C31D0057513D /* InteractiveInputField */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		18F6483D2D95C31D0057513D /* InteractiveInputField */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1801F9EC2DAEE01300FD462E /* Exceptions for "InteractiveInputField" folder in "InteractiveInputField" target */,
+			);
 			path = InteractiveInputField;
 			sourceTree = "<group>";
 		};
@@ -392,8 +405,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"InteractiveInputField/Preview Content\"";
+				DEVELOPMENT_TEAM = 98F45T5V8G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = InteractiveInputField/Info.plist;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Read photo";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -430,8 +445,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"InteractiveInputField/Preview Content\"";
+				DEVELOPMENT_TEAM = 98F45T5V8G;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = InteractiveInputField/Info.plist;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Read photo";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
