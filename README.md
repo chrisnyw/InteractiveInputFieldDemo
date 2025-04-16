@@ -38,7 +38,7 @@ cd InteractiveInputFieldDemo
 ### Video
 
 <figure>
-<img src="https://github.com/user-attachments/assets/feebda91-cdc0-4b47-a1e0-9b6b71cc53d1" width="200" title="Interactive Input Field Demo" alt="Interactive Input Field Demo"/>
+<img src="https://github.com/user-attachments/assets/a74e44fd-5982-4468-a07e-924757d366c9" width="200" title="Interactive Input Field Demo" alt="Interactive Input Field Demo"/>
 </figure>
 
 ### Screenshots
